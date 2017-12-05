@@ -21,7 +21,6 @@ public class OrderRun implements CommandLineRunner {
 	public void run(String... arg0) throws Exception {
 
 		printMessage("检查输入指令----");
-		printMessage(jd.synAllbrand());
 		if (arg0 == null || arg0.length == 0) {
 			printMessage("无同步指令输入");
 		} else if (arg0.length == 1 || arg0.length == 2) {
