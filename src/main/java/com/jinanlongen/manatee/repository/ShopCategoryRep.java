@@ -24,6 +24,9 @@ public interface ShopCategoryRep extends JpaRepository<ShopCategory, Long> {
 	@Query(value = "select distinct shop_id from shop_category where category_id=?", nativeQuery = true)
 	public List<String> findShopIdByCategoryId(Long cid);
 
+	@Query(value = "select distinct a.shop_id from shop_category a,category_attrs b where a.category_id=b.category_id and b.category_attr_id=?", nativeQuery = true)
+	public List<String> findShopIdByCategoryAttrId(Long caid);
+
 	@Query(value = "select distinct shop_id from shop_category where category_id=? and id in(select min(id) from shop_category group by category_id)", nativeQuery = true)
 	public List<String> findMinShopIdByCid(Long cid);
 

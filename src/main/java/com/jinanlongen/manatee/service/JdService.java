@@ -57,6 +57,15 @@ public class JdService {
 		list.forEach(n -> System.out.println(n));
 	}
 
+	// 通过任务ID更新颜色尺码
+	public void updateByDutyId(int id) {
+		List<String> cid = CASRep.CategoryId(id);
+		List<Integer> shopid = CASRep.shopId(id);
+		if (cid.size() == 1 && shopid.size() == 1) {
+			System.out.println(updateCategory(Long.valueOf(cid.get(0)), shopid.get(0) + ""));
+		}
+	}
+
 	// 更新一个非ColorAndSize属性
 	public String updateAttrValue(Long id, String shopid) {
 		if ("".equals(shopid) || shopid == null) {
@@ -105,12 +114,11 @@ public class JdService {
 
 	// 更新一个类目属性的属性值
 	public String updateCategoryAttr(Long caid) {
-		CASRep.deleteByAttributeId(caid);
 		CategoryAttrs categoryAttr = CARep.findOne(caid);
 		if (categoryAttr != null) {
 			if ("颜色".equals(categoryAttr.getAttrName()) || "尺码".equals(categoryAttr.getAttrName())) {
 				CASRep.deleteByAttributeId(caid);
-				List<String> shoplist = shopCategoryRep.findShopIdByCategoryId(caid);
+				List<String> shoplist = shopCategoryRep.findShopIdByCategoryAttrId(caid);
 				for (String shop_id : shoplist) {
 					saveAttribute(longToBigIntegerList(caid), shop_id, "ColorAndSize");
 				}
@@ -166,11 +174,21 @@ public class JdService {
 		return "同步类目成功，类目ID：" + cid;
 	}
 
+	// 同步指定店铺的指定类目的颜色尺码属性
+	public String updateCategory(Long cid, String shop_id) {
+		CASRep.deleteByCategoryIdAndShopId(cid, shop_id);
+		// 颜色尺码属性
+		List<BigInteger> attrId = CARep.findOtherAttrByCidAndShopid(cid, shop_id);
+		saveAttribute(attrId, shop_id, "ColorAndSize");
+		return "同步类目成功，类目ID：" + cid + "shop:" + shop_id;
+	}
+
 	public void saveAttribute(List<BigInteger> list, String shopid, String attributeType) {
 		Shop allshop = shopRep.findOne(shopid);
 		JdUtils jd = new JdUtils(allshop);
 		for (BigInteger attr : list) {
 			List<CategoryAttrValueJos> attrList = jd.findValuesByAttrIdJos(attr.longValue());
+			System.out.println(attrList.size());
 			if (attrList == null || attrList.size() == 0) {
 				continue;
 			} else {
@@ -187,13 +205,14 @@ public class JdService {
 
 	// 同步所有店铺颜色尺码属性
 	public String synColorAndSize() {
+		System.out.println("开始同步所有店铺的颜色尺码属性信息");
 		CASRep.deleteAll();
 		List<String> list = CARep.findOtherSign();
 		for (String shopid : list) {
 			Shop shop = shopRep.findOne(shopid);
 			JdUtils jdu = new JdUtils(shop);
 			List<BigInteger> attrIdList = CARep.findOtherCidByShopId(shopid);
-			System.out.println(shop.getName() + "店，更新数量：" + attrIdList.size());
+			System.out.println(shop.getName() + "店，更新颜色尺码属性数量：" + attrIdList.size());
 			for (BigInteger attrId : attrIdList) {
 				List<CategoryAttrValueJos> attrList = jdu.findValuesByAttrIdJos(attrId.longValue());
 				if (attrList == null || attrList.size() == 0) {
@@ -221,13 +240,14 @@ public class JdService {
 
 	// 同步所有店铺非颜色，尺码属性信息
 	public String synAllAtrribute() {
+		System.out.println("开始同步所有店铺的通用属性信息");
 		attrRep.deleteAll();
 		List<String> list = CARep.findSign();
 		for (String shopid : list) {
 			Shop shop = shopRep.findOne(shopid);
 			JdUtils jdu = new JdUtils(shop);
 			List<BigInteger> attrIdList = CARep.findCidBySign(shopid);
-			System.out.println(shopid + "店，更新数量：" + attrIdList.size());
+			System.out.println(shop.getName() + "店，更新通用属性信息数量：" + attrIdList.size());
 			for (BigInteger attrId : attrIdList) {
 				List<CategoryAttrValueJos> attrList = jdu.findValuesByAttrIdJos(attrId.longValue());
 				if (attrList == null || attrList.size() == 0) {
@@ -281,12 +301,14 @@ public class JdService {
 
 	// 同步所有店铺的类目属性
 	public String synAllcategoryAttr() {
+		System.out.println("开始同步所有店铺的类目属性信息");
 		CARep.deleteAll();
 		List<String> list = shopCategoryRep.findMinShopId();
 		for (String shopid : list) {
 			Shop shop = shopRep.findOne(shopid);
 			JdUtils jdu = new JdUtils(shop);
 			List<BigInteger> ll = shopCategoryRep.findMinCategorybyShopId(shopid);
+			System.out.println(shop.getName() + "店，更新类目属性信息数量：" + ll.size());
 			for (BigInteger CategoryId : ll) {
 				List<CategoryAttr> calist = jdu.findAttrsByCategoryId(CategoryId.longValue());
 				if (calist == null || calist.size() == 0) {
@@ -314,8 +336,41 @@ public class JdService {
 		CARep.save(categoryAttrs);
 	}
 
+	// 同步指定店铺的类目信息
+	public String synOneShop(String id) {
+		System.out.println("开始同步所有店铺的类目信息");
+		// shopCategoryRep.deleteAll();
+		// categoryRep.deleteAll();
+
+		Shop shop = shopRep.findOne(id);
+		JdUtils jdu = new JdUtils(shop);
+		List<Category> categoryList = jdu.get();
+		System.out.println(shop.getName() + "---开通了类目数量" + categoryList.size());
+		if (categoryList == null || categoryList.size() == 0) {
+			return "无类目";
+		} else {
+			for (Category jdcategory : categoryList) {
+				// 商店类目对应表
+				ShopCategory shopMap = new ShopCategory();
+				shopMap.setCategoryId((long) jdcategory.getId());
+				shopMap.setShopId(shop.getShopId());
+				shopMap.setLev(jdcategory.getLev() + "");
+				shopCategoryRep.save(shopMap);
+
+				if (categoryRep.exists((long) jdcategory.getId())) {
+					continue;
+				} else {
+					saveCategory(jdcategory);
+				}
+			}
+		}
+		return "jkjk";
+
+	}
+
 	// 同步所有店铺的类目
 	public String synAllCategory() {
+		System.out.println("开始同步所有店铺的类目信息");
 		shopCategoryRep.deleteAll();
 		categoryRep.deleteAll();
 		List<Shop> list = shopRep.findAll();
@@ -358,6 +413,7 @@ public class JdService {
 
 	// 同步所有品牌
 	public String synAllbrand() {
+		System.out.println("开始同步所有店铺的品牌信息");
 		brandRep.deleteAll();
 		List<Shop> list = shopRep.findAll();
 		for (Shop shop : list) {
@@ -367,14 +423,12 @@ public class JdService {
 				continue;
 			} else {
 				for (VenderBrandPubInfo venderBrandPubInfo : brandlist) {
-
 					saveBrand(venderBrandPubInfo, shop.getShopId());
-
 				}
 			}
 		}
 
-		return "brand 同步成功";
+		return "品牌信息同步成功";
 
 	}
 
@@ -387,175 +441,4 @@ public class JdService {
 		brandRep.save(brand);
 	}
 
-	// // 同步已授权的品牌
-	// public String synBrand() {
-	// List<VenderBrandPubInfo> brandlist = jdUtils.queryBrand();
-	// if (brandlist.size() == 0) {
-	// return "没有获取品牌";
-	// } else {
-	// brandRep.deleteAll();
-	// for (int a = 0; a < brandlist.size(); a++) {
-	// Brand brand = new Brand();
-	// VenderBrandPubInfo venderBrandPubInfo = brandlist.get(a);
-	// brand.setIsAutorization("true");
-	// brand.setBrandName(venderBrandPubInfo.getBrandName());
-	// brand.setErpBrandId(venderBrandPubInfo.getErpBrandId());
-	// brandRep.save(brand);
-	// }
-	// return "同步了" + brandlist.size() + "条品牌信息";
-	// }
-	//
-	// }
-
-	public String deleteBrand() {
-		brandRep.deleteAll();
-		return "delete all";
-
-	}
-
-	// // 同步商家类目信息
-	// public String synCategory() {
-	// List<Category> categoryList = jdUtils.get();
-	// if (categoryList.size() == 0) {
-	// return "没有获取类目信息";
-	// } else {
-	// categoryRep.deleteAll();
-	// for (int a = 0; a < categoryList.size(); a++) {
-	// Categorys category = new Categorys();
-	// Category JdCategory = categoryList.get(a);
-	// category.setFid(JdCategory.getFid());
-	// category.setIs_parent(JdCategory.isParent());
-	// category.setLev(JdCategory.getLev() + "");
-	// category.setName(JdCategory.getName());
-	// category.setStatus(JdCategory.getStatus());
-	// category.setIndex_id(JdCategory.getIndexId());
-	// category.setCategoryId(JdCategory.getId());
-	// categoryRep.save(category);
-	// }
-	// return "同步了" + categoryList.size() + "条商家类目信息";
-	// }
-	//
-	// }
-
-	// // 同步类目属性列表
-	// public String synCategoryAttr() {
-	// List<Long> idlist = categoryRep.findAllCategoryId();
-	// int num = 0;
-	// if (idlist.size() != 0) {
-	// CARep.deleteAll();
-	// }
-	// for (int a = 0; a < idlist.size(); a++) {
-	// List<CategoryAttr> calist = jdUtils.findAttrsByCategoryId(idlist.get(a));
-	// num += calist.size();
-	// if (calist == null || calist.size() == 0) {
-	// continue;
-	// } else {
-	// for (int b = 0; b < calist.size(); b++) {
-	// CategoryAttrs categoryAttrs = new CategoryAttrs();
-	// CategoryAttr jdcategoryAttr = calist.get(b);
-	// categoryAttrs.setAttrName(jdcategoryAttr.getAttName());
-	// categoryAttrs.setCategoryAttrId(jdcategoryAttr.getCategoryAttrId());
-	// categoryAttrs.setInputType(jdcategoryAttr.getInputType() + "");
-	// categoryAttrs.setAttributeType(jdcategoryAttr.getAttributeType() + "");
-	// categoryAttrs.setCategoryId(jdcategoryAttr.getCategoryId());
-	// CARep.save(categoryAttrs);
-	// }
-	// }
-	// }
-	// return "同步完成" + num + "条类目属性信息";
-	//
-	// }
-
-	// // 类目属性值
-	// public String synAttribute() {
-	// List<BigInteger> idlist = CARep.findAllAttrId();
-	// if (idlist.size() == 0) {
-	// return "没有需同步类目属性值";
-	// } else {
-	// attrRep.deleteAll();
-	// int attrsize = 0;
-	// for (int a = 0; a < idlist.size(); a++) {
-	// List<CategoryAttrValueJos> attrList =
-	// jdUtils.findValuesByAttrIdJos(idlist.get(a).longValue());
-	// attrsize += attrList.size();
-	// if (attrList == null || attrList.size() == 0) {
-	// continue;
-	// } else {
-	// for (int b = 0; b < attrList.size(); b++) {
-	// Attributes attr = new Attributes();
-	// CategoryAttrValueJos jdattr = attrList.get(b);
-	// attr.setAttributeId(jdattr.getAttributeId());
-	// attr.setValue(jdattr.getValue());
-	// attr.setAttributeValueId(jdattr.getId());
-	// attr.setIndexId(jdattr.getIndexId());
-	// attr.setCategoryId(jdattr.getCategoryId());
-	// attrRep.save(attr);
-	// }
-	// }
-	//
-	// }
-	// return "恭喜你，同步完成！！" + attrsize + "条属性";
-	// }
-	//
-	// }
-
-	// // 其他类目属性值
-	// public String synOtherAttribute() {
-	// List<BigInteger> idlist = CARep.findOtherAttrId();
-	// if (idlist.size() == 0) {
-	// return "没有需同步类目属性值";
-	// } else {
-	// int attrsize = 0;
-	// for (int a = 0; a < idlist.size(); a++) {
-	// List<CategoryAttrValueJos> attrList =
-	// jdUtils.findValuesByAttrIdJos(idlist.get(a).longValue());
-	// attrsize += attrList.size();
-	// if (attrList == null || attrList.size() == 0) {
-	// continue;
-	// } else {
-	// for (int b = 0; b < attrList.size(); b++) {
-	// Attributes attr = new Attributes();
-	// CategoryAttrValueJos jdattr = attrList.get(b);
-	// attr.setAttributeId(jdattr.getAttributeId());
-	// attr.setValue(jdattr.getValue());
-	// attr.setAttributeValueId(jdattr.getId());
-	// attr.setIndexId(jdattr.getIndexId());
-	// attr.setCategoryId(jdattr.getCategoryId());
-	// attrRep.save(attr);
-	// }
-	// }
-	//
-	// }
-	// return "恭喜你，同步完成！！" + attrsize + "条属性";
-	// }
-	//
-	// }
-
-	// public String synAttributeone() {
-	//
-	// Long id = (long) 103008;
-	// List<CategoryAttrValueJos> attrList = jdUtils.findValuesByAttrIdJos(id);
-	// if (attrList == null || attrList.size() == 0) {
-	// return "sshibai";
-	// } else {
-	// for (int b = 0; b < attrList.size(); b++) {
-	// Attributes attr = new Attributes();
-	// CategoryAttrValueJos jdattr = attrList.get(b);
-	// Attributes newAttr = attrRep.findByAttributeValueId(jdattr.getId());
-	// if (newAttr != null) {
-	// System.out.println("newAttr != null");
-	// attr.setId(newAttr.getId());
-	// }
-	// attr.setAttributeId(jdattr.getAttributeId());
-	// attr.setValue(jdattr.getValue());
-	// attr.setAttributeValueId(jdattr.getId());
-	// attr.setIndexId(jdattr.getIndexId());
-	// attr.setCategoryId(jdattr.getCategoryId());
-	// attrRep.save(attr);
-	// }
-	// }
-	//
-	// return "恭喜你，同步完成！！";
-	//
-	// }
 }

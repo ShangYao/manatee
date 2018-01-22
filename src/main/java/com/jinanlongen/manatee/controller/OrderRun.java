@@ -21,6 +21,10 @@ public class OrderRun implements CommandLineRunner {
 	public void run(String... arg0) throws Exception {
 
 		printMessage("检查输入指令----");
+		// jd.synOneShop("31");
+		// jd.updateByDutyId(37777);
+		// printMessage(jd.updateCategoryAttr(Long.valueOf("1000012771")));
+		// printMessage(jd.updateCategory(Long.valueOf("9737"), "11"));
 		if (arg0 == null || arg0.length == 0) {
 			printMessage("无同步指令输入");
 		} else if (arg0.length == 1 || arg0.length == 2) {
@@ -38,6 +42,12 @@ public class OrderRun implements CommandLineRunner {
 			synAll();
 		} else if ("synBrand".equals(order[0])) {
 			printMessage(jd.synAllbrand());
+		} else if ("synByDuty".equals(order[0])) {
+			if (order.length == 2) {
+				jd.updateByDutyId(Integer.valueOf(order[1]));
+			} else {
+				printMessage("无ID输入");
+			}
 		} else if ("synCategory".equals(order[0])) {
 			if (order.length == 2) {
 				printMessage(jd.updateCategory(Long.valueOf(order[1])));
@@ -68,6 +78,7 @@ public class OrderRun implements CommandLineRunner {
 	}
 
 	public void synAll() {
+		printMessage(jd.synAllbrand());
 		printMessage(jd.synAllCategory());
 		printMessage(jd.synAllcategoryAttr());
 		printMessage(jd.synAllAtrribute());
