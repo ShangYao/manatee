@@ -5,6 +5,7 @@ import java.io.Serializable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * 类说明
@@ -13,6 +14,7 @@ import javax.persistence.Id;
  * @date 2017年11月27日
  */
 @Entity
+@Table(name = "jd_color_and_size")
 public class ColorAndSize implements Serializable {
 	private static final long serialVersionUID = 1L;
 	@Id

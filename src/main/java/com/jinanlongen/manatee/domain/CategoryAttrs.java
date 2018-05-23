@@ -2,6 +2,7 @@ package com.jinanlongen.manatee.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * 类说明
@@ -10,6 +11,7 @@ import javax.persistence.Id;
  * @date 2017年11月22日
  */
 @Entity
+@Table(name = "jd_category_attrs")
 public class CategoryAttrs {
 
 	private long id;

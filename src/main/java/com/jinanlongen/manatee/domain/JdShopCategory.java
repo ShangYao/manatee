@@ -5,6 +5,7 @@ import java.io.Serializable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * 类说明
@@ -13,7 +14,8 @@ import javax.persistence.Id;
  * @date 2017年11月24日
  */
 @Entity
-public class ShopCategory implements Serializable {
+@Table(name = "jd_shop_category")
+public class JdShopCategory implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	@Id

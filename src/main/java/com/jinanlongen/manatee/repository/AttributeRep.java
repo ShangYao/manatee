@@ -27,6 +27,6 @@ public interface AttributeRep extends JpaRepository<Attributes, Long> {
 
 	@Transactional
 	@Modifying
-	@Query(value = "update attributes set value=? where attribute_value_id=?", nativeQuery = true)
+	@Query(value = "update jd_attributes set value=? where attribute_value_id=?", nativeQuery = true)
 	public void updateAttr(String value, Long id);
 }

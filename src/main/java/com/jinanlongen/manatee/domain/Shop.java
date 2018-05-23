@@ -20,6 +20,15 @@ public class Shop {
 	private String appKey;
 	private String appSecret;
 	private String accessToken;
+	private String platform;// sn,tb,jd
+
+	public String getPlatform() {
+		return platform;
+	}
+
+	public void setPlatform(String platform) {
+		this.platform = platform;
+	}
 
 	public String getShopId() {
 		return shopId;
